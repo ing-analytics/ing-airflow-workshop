@@ -27,7 +27,7 @@ brew link --force freetds
 ### Download Docker Images
 
 ```sh
-docker pull andrewgaul/s3proxy:sha-e5c20b6
+docker pull minio/minio:RELEASE.2025-05-24T17-08-30Z
 docker pull mcr.microsoft.com/azure-sql-edge:1.0.7
 ```
 
