@@ -1,0 +1,6 @@
+airflow-webserver.pid
+airflow.db
+standalone_admin_password.txt
+webserver_config.py
+csv_data/*.parquet
+logs/

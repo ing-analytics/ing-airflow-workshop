@@ -38,26 +38,26 @@ with DAG('process_csv_file',
         default_args = default_args,
         start_date = datetime(2024,6,1),
         schedule_interval = "30 9 * * *", #09:30 every day
-        # catchup = False,
+        catchup = False,
         tags = ["workshop-exercise"],
         ) as dag:
 
-
+    AIRFLOW_HOME = os.environ.get("AIRFLOW_HOME")
     list_files = BashOperator(
         task_id='list_files',
-        bash_command='ls -l /Users/us74co/it-class-workshop/day-2/csv_data',
+        bash_command=f'ls -l {AIRFLOW_HOME}/s3_data/workshop/',
     )
 
     convert_files = PythonOperator(
         task_id='convert_from_csv_to_parquet',
         python_callable=convert_csv_to_parquet,
-        op_args=['/Users/us74co/it-class-workshop/day-2/csv_data', '/Users/us74co/it-class-workshop/day-2/csv_data']
+        op_args=[f'{AIRFLOW_HOME}/csv_data', f'{AIRFLOW_HOME}/csv_data']
     )
 
     wait_for_parquet_files = FileSensor(
         task_id='wait_for_parquet_files',
         fs_conn_id='fs_default',
-        filepath='/Users/us74co/it-class-workshop/day-2/csv_data/*.parquet',
+        filepath=f'{AIRFLOW_HOME}/csv_data/*.parquet',
         poke_interval=30,
         timeout=600,
     )

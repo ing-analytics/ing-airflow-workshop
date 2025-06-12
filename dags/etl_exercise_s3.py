@@ -53,5 +53,3 @@ with DAG(
     # `workshop` bucket is already created and contains files when you start the s3proxy container
 
     # Hints: you can use LocalFilesystemToS3Operator, and/or some functions in S3Hook
-
-    create_bucket

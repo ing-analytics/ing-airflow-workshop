@@ -1,21 +1,51 @@
-# Docker Compose Exercise
+services:
+  # MS SQL Server
+  mssql:
+    image: mcr.microsoft.com/azure-sql-edge
+    container_name: mssql
+    ports:
+      - ${MSSQL_LOCAL_PORT:-1433}:1433
+    env_file:
+      - path: sql.env
+        required: true
+  
+  # S3
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    env_file:
+      - path: s3.env
+        required: true
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
 
-# 1. Create a docker compose file (`compose.yaml`) which runs these 2 containers
+  uploader:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    env_file:
+      - path: s3.env
+        required: true
+    command: >
+      "
+      mc alias set myminio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
+      mc mb -p myminio/workshop &&
+      mc cp -r /files/ myminio/workshop/
+      "
+    volumes:
+      - ./s3_data/workshop:/files
 
-# Base it on the following docker run commands
-
-# ```
-# docker run -v $(PWD)/s3_data:/data --env-file s3.env --name s3 andrewgaul/s3proxy
-# ```
-
-# ```
-# docker run --env-file sql.env --name sql mcr.microsoft.com/azure-sql-edge:latest
-# ```
-
-# Reference: https://docs.docker.com/compose/compose-application-model/#illustrative-example
-
-# 2. Also expose the ports for `s3` in 8083, mssql in `1433`
-
-# 3. Run `docker compose up` and then run `docker ps` to check if both containers are up
-
-# You should get the same output as the `docker-compose.png`
+volumes:
+  minio_data:
