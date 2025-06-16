@@ -1,4 +1,6 @@
 """
+## Exercise 2:
+
 Use the AWS Operators and a branching task to process a file in an S3 bucket
 based on if it already exists or not.
 
@@ -65,6 +67,7 @@ with DAG(
     start_date=days_ago(2),
     max_active_runs=1,
     tags=["workshop-exercise"],
+    doc_md=__doc__,
 ) as dag:
     # 1. List all objects in the bucket
     # 2. Check if file exists in the bucket

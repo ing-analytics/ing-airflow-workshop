@@ -27,7 +27,7 @@ cfg = {
     "user_defined_macros": {
         "get_second_day_of_week": get_second_day_of_week,
     },
-    "tags": ["workshop"],
+    "tags": ["workshop", "example"],
 }
 
 with DAG(**cfg) as dag:

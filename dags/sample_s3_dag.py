@@ -52,7 +52,7 @@ with DAG(
     schedule_interval=None,
     start_date=days_ago(2),
     max_active_runs=1,
-    tags=["workshop"],
+    tags=["workshop", "example"],
 ) as dag:
     create_bucket = S3CreateBucketOperator(
         task_id="s3_bucket_dag_create",

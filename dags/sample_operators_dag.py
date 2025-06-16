@@ -37,7 +37,7 @@ with DAG(
     start_date=datetime(2024, 6, 1),
     schedule_interval="30 9 * * *",  # 09:30 every day
     # catchup = False,
-    tags=["workshop"],
+    tags=["workshop", "example"],
 ) as dag:
     start_task = BashOperator(
         task_id="start_dag",
