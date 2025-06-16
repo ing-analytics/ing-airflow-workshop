@@ -16,18 +16,17 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-import os
-
 from airflow.models.dag import DAG
-from airflow.operators.python import PythonOperator
+from airflow.operators.python import task
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.providers.amazon.aws.operators.s3 import S3CreateBucketOperator
 from airflow.utils.dates import days_ago
 
-BUCKET_NAME = os.environ.get("BUCKET_NAME", "test-airflow-12345")
+BUCKET_NAME = "workshop-output"
 CONN_ID = "workshop_s3"
 
 
+@task
 def upload_files():
     """This is a python callback to add files into the s3 bucket"""
     # add keys to bucket
@@ -37,7 +36,15 @@ def upload_files():
             string_data=f"input{i}",
             key=f"path/data{i}",
             bucket_name=BUCKET_NAME,
+            replace=True,
         )
+
+
+@task
+def show_file_contents(file_idx: int):
+    s3_hook = S3Hook(aws_conn_id=CONN_ID)
+    contents = s3_hook.read_key(key=f"path/data{file_idx}", bucket_name=BUCKET_NAME)
+    print(contents)
 
 
 with DAG(
@@ -47,15 +54,17 @@ with DAG(
     max_active_runs=1,
     tags=["workshop"],
 ) as dag:
-
     create_bucket = S3CreateBucketOperator(
         task_id="s3_bucket_dag_create",
         aws_conn_id=CONN_ID,
         bucket_name=BUCKET_NAME,
     )
 
-    add_files_to_bucket = PythonOperator(
-        task_id="s3_bucket_dag_add_keys_to_bucket", python_callable=upload_files
-    )
+    add_files_to_bucket = upload_files()
+    show_files_tasks = []
+    for i in range(3):
+        task = show_file_contents.override(task_id=f"show_file_{i}")
+        task_instance = task(file_idx=i)
+        show_files_tasks.append(task_instance)
 
-    create_bucket >> add_files_to_bucket
+    create_bucket >> add_files_to_bucket >> show_files_tasks
