@@ -1,3 +1,13 @@
+"""
+Use the AWS Operators and a branching task to process a file in an S3 bucket
+based on if it already exists or not.
+
+# 1. Use an S3 Sensor to check the input file exists
+# 2. List all objects in the output bucket
+# 3. If the output file does not exist, create the file
+# 4. Otherwise, just print the contents of the file in the bucket.
+"""
+
 from airflow.models.dag import DAG
 from airflow.providers.amazon.aws.operators.s3 import S3ListOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
