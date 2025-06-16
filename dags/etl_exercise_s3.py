@@ -1,33 +1,76 @@
-# Code template from: https://airflow.apache.org/docs/apache-airflow-providers-amazon/2.2.0/operators/s3.html
-
-# Licensed to the Apache Software Foundation (ASF) under one
-# or more contributor license agreements.  See the NOTICE file
-# distributed with this work for additional information
-# regarding copyright ownership.  The ASF licenses this file
-# to you under the Apache License, Version 2.0 (the
-# "License"); you may not use this file except in compliance
-# with the License.  You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
-
 from airflow.models.dag import DAG
-# from airflow.providers.amazon.aws.hooks.s3 import S3Hook
-from airflow.providers.amazon.aws.operators.s3 import S3CreateBucketOperator
-# from airflow.providers.amazon.aws.transfers.local_to_s3 import LocalFilesystemToS3Operator
+from airflow.providers.amazon.aws.operators.s3 import S3ListOperator
 from airflow.utils.dates import days_ago
+from airflow.hooks.base import BaseHook
+from airflow.decorators.python import python_task
+from airflow.decorators.branch_python import branch_task
+
+import boto3
+from botocore.client import Config
 
 S3_CONN_ID = "workshop_s3"
 SRC_BUCKET_NAME = "workshop"
 SRC_FILE = "input.csv"
 DEST_BUCKET_NAME = "workshop-output"
 DEST_FILE = "yourname.parquet"
+
+
+@branch_task
+def branch_for_existing_input(files: list[str]) -> str:
+    print(files)
+    if SRC_FILE in files:
+        return "show_file"
+    else:
+        return "process_file"
+
+
+@python_task
+def show_file():
+    handler = S3Handler(conn_id=S3_CONN_ID)
+    file_contents = handler.get_file_contents(SRC_BUCKET_NAME, SRC_FILE)
+    print(file_contents)
+
+
+@python_task
+def process_file():
+    print("Not implemented yet")
+
+
+class S3Handler:
+    def __init__(self, conn_id: str):
+        # Fetch connection from Airflow
+        conn = BaseHook.get_connection(conn_id)
+        # Extract credentials and extra parameters
+        access_key = conn.login
+        secret_key = conn.password
+        endpoint_url = conn.extra_dejson.get("endpoint_url", "http://localhost:9000")
+        # Create the S3 client
+        self.s3_client = boto3.client(
+            "s3",
+            endpoint_url=endpoint_url,
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            config=Config(signature_version="s3v4"),
+            region_name="eu-central-1",
+        )
+
+    def upload_to_bucket(self, bucket_name: str, file_contents: str, path: str):
+        try:
+            self.s3_client.put_object(
+                Bucket=bucket_name, Key=path, Body=file_contents.encode()
+            )
+            print(f"Successfully uploaded to bucket '{bucket_name}' at path '{path}'.")
+        except Exception as e:
+            print(f"Failed to upload to bucket: {e}")
+
+    def get_file_contents(self, bucket_name: str, path: str) -> str:
+        try:
+            response = self.s3_client.get_object(Bucket=bucket_name, Key=path)
+            return response["Body"].read().decode("utf-8")
+        except Exception as e:
+            print(f"Failed to retrieve file from bucket: {e}")
+            return ""
+
 
 with DAG(
     dag_id="etl-exercise-s3-dag",
@@ -36,20 +79,12 @@ with DAG(
     max_active_runs=1,
     tags=["workshop-exercise"],
 ) as dag:
-
-
-    create_bucket = S3CreateBucketOperator(
-        task_id="s3_bucket_dag_create",
-        aws_conn_id=S3_CONN_ID,
-        bucket_name=DEST_BUCKET_NAME,
+    # 1. List all objects in the bucket
+    # 2. Check if file exists in the bucket
+    # 3. If file does not exist, create the file
+    # 4. Print the contents of the file in the bucket.
+    list_files = S3ListOperator(
+        task_id="s3-list-files", bucket=SRC_BUCKET_NAME, aws_conn_id=S3_CONN_ID
     )
-
-    # Write an ETL pipeline that does the following:
-    # 1. Downloads file `SRC_FILE` from `workshop` bucket to local directory
-    # 2. Computes the sum of amounts per iban from given data (you may use pandas)
-    # 3. Saves the resulting dataframe as `<yourname>.parquet` file
-    # 4. Uploads the resulting parquet file to `workshop-output` bucket under `results/<yourname>.parquet`
-
-    # `workshop` bucket is already created and contains files when you start the s3proxy container
-
-    # Hints: you can use LocalFilesystemToS3Operator, and/or some functions in S3Hook
+    check_file_exists = branch_for_existing_input(list_files.output)
+    list_files >> check_file_exists >> [show_file(), process_file()]
