@@ -45,10 +45,10 @@ def output_weather() -> None:
 
 
 with DAG(
-    "hello-world",
+    "exercise-1",
     default_args=default_args,
     start_date=datetime(2024, 6, 1),
-    schedule_interval="@daily",
+    schedule_interval=None,
     catchup=False,
     tags=["workshop", "example"],
 ) as dag:
