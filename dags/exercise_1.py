@@ -50,7 +50,7 @@ with DAG(
     start_date=datetime(2024, 6, 1),
     schedule_interval=None,
     catchup=False,
-    tags=["workshop", "example"],
+    tags=["workshop", "exercise"],
 ) as dag:
     # TODO: COMPLETE
     pass

@@ -62,11 +62,11 @@ def process_file():
 
 
 with DAG(
-    dag_id="etl-exercise-s3-dag",
+    dag_id="exercise-2",
     schedule_interval=None,
     start_date=days_ago(2),
     max_active_runs=1,
-    tags=["workshop-exercise"],
+    tags=["workshop", "exercise"],
     doc_md=__doc__,
 ) as dag:
     # 1. List all objects in the bucket
