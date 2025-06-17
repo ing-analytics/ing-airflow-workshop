@@ -73,6 +73,7 @@ def process_file():
 
 @task
 def show_amount(ti: TaskInstance):
+    # Extra exercise:
     total_amount = ti.xcom_pull(task_ids="show_file")
     print(f"Total amount in transactions is: {total_amount}")
 
@@ -96,4 +97,5 @@ with DAG(
     show_file_task = show_file()
     process_file_task = process_file()
     list_files >> branch_for_input >> [show_file_task, process_file_task]
+    # Extra exercise:
     show_file_task >> show_amount()

@@ -18,30 +18,39 @@ from airflow import DAG
 from airflow.decorators import task
 
 from datetime import datetime
-
+import requests
 
 default_args = {
     "owner": "airflow",
     "retries": 1,
 }
 
+URL = "https://api.open-meteo.com/v1/forecast?latitude=52.374&longitude=4.8897&hourly=temperature_2m"
+
 
 @task
 def retrieve_weather() -> dict[str, Any]:
-    # TODO: IMPLEMENT
-    pass
+    weather_response = requests.get(URL)
+    weather_response.raise_for_status()
+    data = weather_response.json()
+    return data
 
 
 @task
-def get_avg_temperature() -> float:
-    # TODO: IMPLEMENT
-    pass
+def get_avg_temperature(weather_data: dict[str, Any]) -> float:
+    hourly_temperature = weather_data["hourly"]["temperature_2m"]
+    avg_temperature = sum(hourly_temperature) / len(hourly_temperature)
+    return avg_temperature
 
 
 @task
-def output_weather() -> None:
-    # TODO: IMPLEMENT
-    pass
+def output_weather(avg_temperature: float) -> None:
+    if avg_temperature < 12:
+        print("cold")
+    elif 12 <= avg_temperature <= 25:
+        print("moderate")
+    else:
+        print("hot")
 
 
 with DAG(
@@ -52,5 +61,6 @@ with DAG(
     catchup=False,
     tags=["workshop", "exercise"],
 ) as dag:
-    # TODO: COMPLETE
-    pass
+    weather = retrieve_weather()
+    avg_temp = get_avg_temperature(weather)
+    output_weather(avg_temp)
