@@ -19,6 +19,7 @@ based on if it already exists or not.
 from airflow.models.dag import DAG
 from airflow.models.taskinstance import TaskInstance
 from airflow.providers.amazon.aws.operators.s3 import S3ListOperator
+from airflow.providers.amazon.aws.sensors.s3 import S3KeySensor
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.utils.dates import days_ago
 from airflow.decorators import task
@@ -32,6 +33,8 @@ SRC_BUCKET_NAME = "workshop"
 SRC_FILE = "input.csv"
 DEST_BUCKET_NAME = "workshop-output"
 DEST_FILE = "yourname.parquet"
+
+XCOM_KEY = "total_amount"
 
 
 @branch_task
@@ -55,7 +58,7 @@ def show_file(ti: TaskInstance):
     print(parquet_data)
     # Extra exercise:
     total_amount = parquet_data["amount"].sum()
-    ti.xcom_push(key="total_amount", value=total_amount)
+    ti.xcom_push(key=XCOM_KEY, value=total_amount)
 
 
 @task
@@ -74,7 +77,7 @@ def process_file():
 @task
 def show_amount(ti: TaskInstance):
     # Extra exercise:
-    total_amount = ti.xcom_pull(task_ids="show_file")
+    total_amount = ti.xcom_pull(task_ids="show_file", dag_id=ti.dag_id, key=XCOM_KEY)
     print(f"Total amount in transactions is: {total_amount}")
 
 
@@ -86,16 +89,23 @@ with DAG(
     tags=["workshop", "exercise"],
     doc_md=__doc__,
 ) as dag:
-    # 1. List all objects in the bucket
-    # 2. Check if file exists in the bucket
-    # 3. If file does not exist, create the file
-    # 4. Print the contents of the file in the bucket.
+    check_input_file = S3KeySensor(
+        task_id="s3-check-input-file",
+        bucket_key=SRC_FILE,
+        bucket_name=SRC_BUCKET_NAME,
+        aws_conn_id=S3_CONN_ID,
+    )
     list_files = S3ListOperator(
         task_id="s3-list-files", bucket=DEST_BUCKET_NAME, aws_conn_id=S3_CONN_ID
     )
     branch_for_input = branch_for_existing_input(list_files.output)
     show_file_task = show_file()
     process_file_task = process_file()
-    list_files >> branch_for_input >> [show_file_task, process_file_task]
+    (
+        check_input_file
+        >> list_files
+        >> branch_for_input
+        >> [show_file_task, process_file_task]
+    )
     # Extra exercise:
     show_file_task >> show_amount()
