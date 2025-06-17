@@ -34,7 +34,7 @@ AIRFLOW_HOME = os.environ.get("AIRFLOW_HOME", "")
 with DAG(
     "operators-sample-dag",
     default_args=default_args,
-    start_date=datetime(2024, 6, 1),
+    start_date=datetime(2025, 6, 10),
     schedule_interval="30 9 * * *",  # 09:30 every day
     # catchup = False,
     tags=["workshop", "example"],
@@ -47,7 +47,7 @@ with DAG(
     read_data_task = PythonOperator(
         task_id="read_data_from_csv",
         python_callable=read_csv,
-        op_args=[f"${AIRFLOW_HOME}/s3_data/workshop/input.csv"],
+        op_args=[f"{AIRFLOW_HOME}/csv_data/input_file_1.csv"],
     )
 
     final_task = final_python_function()

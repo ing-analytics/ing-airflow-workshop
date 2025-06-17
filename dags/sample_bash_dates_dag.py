@@ -13,7 +13,7 @@ def get_second_day_of_week(run_date):
 
 cfg = {
     "dag_id": "bash-sample-dates-dag",
-    "start_date": days_ago(2),
+    "start_date": days_ago(3),
     "schedule_interval": "30 1 * * *",
     "default_args": {
         "owner": "me",
