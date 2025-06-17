@@ -1,3 +1,16 @@
+"""
+Example of a DAG that uses the Amazon Airflow Provider to create an S3 bucket
+and write files into it.
+
+Requirements:
+- You must create an [AWS Connection](https://airflow.apache.org/docs/apache-airflow-providers-amazon/stable/connections/aws.html)
+named `workshop_s3` with `endpoint_url` pointing to the MinIO service endpoint (`http://minio:9000`).
+
+See:
+- [How to store a Connection in Airflow](https://airflow.apache.org/docs/apache-airflow/2.10.5/howto/connection.html#storing-connections-in-the-database)
+- Or check [How to create a Connection from an environment variable](https://airflow.apache.org/docs/apache-airflow/2.10.5/howto/connection.html#storing-connections-in-environment-variables)
+"""
+
 import io
 from airflow.models.dag import DAG
 from airflow.operators.python import task
@@ -45,6 +58,7 @@ with DAG(
     start_date=days_ago(2),
     max_active_runs=1,
     tags=["workshop", "example"],
+    doc_md=__doc__,
 ) as dag:
     create_bucket = S3CreateBucketOperator(
         task_id="s3_bucket_dag_create",
