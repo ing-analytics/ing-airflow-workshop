@@ -1,21 +1,4 @@
-# Code template from: https://airflow.apache.org/docs/apache-airflow-providers-amazon/2.2.0/operators/s3.html
-
-# Licensed to the Apache Software Foundation (ASF) under one
-# or more contributor license agreements.  See the NOTICE file
-# distributed with this work for additional information
-# regarding copyright ownership.  The ASF licenses this file
-# to you under the Apache License, Version 2.0 (the
-# "License"); you may not use this file except in compliance
-# with the License.  You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
+import io
 from airflow.models.dag import DAG
 from airflow.operators.python import task
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
@@ -29,22 +12,31 @@ CONN_ID = "workshop_s3"
 @task
 def upload_files():
     """This is a python callback to add files into the s3 bucket"""
-    # add keys to bucket
+    # Create some files and add them to the bucket
     s3_hook = S3Hook(aws_conn_id=CONN_ID)
     for i in range(0, 3):
         s3_hook.load_string(
-            string_data=f"input{i}",
             key=f"path/data{i}",
             bucket_name=BUCKET_NAME,
+            string_data=f"input{i}",
             replace=True,
         )
 
 
 @task
 def show_file_contents(file_idx: int):
+    # Get the file object:
     s3_hook = S3Hook(aws_conn_id=CONN_ID)
-    contents = s3_hook.read_key(key=f"path/data{file_idx}", bucket_name=BUCKET_NAME)
-    print(contents)
+    file_key = f"path/data{file_idx}"
+    file_object = s3_hook.get_key(key=file_key, bucket_name=BUCKET_NAME)
+    # Download the object to a file buffer:
+    file_buffer = io.BytesIO()
+    file_object.download_fileobj(file_buffer)
+    file_buffer.seek(0)
+    # Print the contents of the file:
+    file_contents = file_buffer.read().decode()
+    print(f"Contents of {file_key} are:")
+    print(file_contents)
 
 
 with DAG(

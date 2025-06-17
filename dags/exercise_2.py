@@ -11,7 +11,7 @@ based on if it already exists or not.
 
 ## Extra exercise (Pushing XComs):
 
-1. On the show_file() task, calculate the sum of the 'amount' column in the Pandas DataFrame
+1. On the task for step 4, calculate the sum of the 'amount' column in the Pandas DataFrame
 2. In the same task, push an XCom called 'total_amount' with the result of the sum.
 3. On a new task, get the total amount from the XCom and print it on the console.
 """
