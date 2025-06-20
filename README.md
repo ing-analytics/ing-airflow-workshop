@@ -12,7 +12,6 @@ Practical exercises for the hands-on part of the "Introduction to Apache Airflow
 ### Download Docker Images
 
 ```sh
-docker pull mcr.microsoft.com/azure-sql-edge:1.0.7
 docker pull minio/minio:RELEASE.2025-05-24T17-08-30Z
 docker pull redis:7.2-bookworm
 docker pull postgres:13
